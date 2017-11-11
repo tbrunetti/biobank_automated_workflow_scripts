@@ -10,7 +10,7 @@ setwd(getwd())
 ##function: create_manifest(batch_log)                                        ##
 ##input:  called in info_manifest() requires name of infinium batch log xlsx  ##
 ##        file                                                                ##
-##output:                                                                     ##
+##output: outputs a xlsx file that is a formatted infinium sample sheet       ##
 ################################################################################
 
 create_manifest <- function(batch_log){
@@ -45,6 +45,11 @@ create_manifest <- function(batch_log){
  
   batch_log_page$`Is Control`[which(batch_log_page$Well %in% c("A1", "C8", "C9", "F4", "F5", "H12"))] <- 1 # put 1 in is control is match one of control well positions
   
+  # change sex to abbreviations
+  batch_log_page$Sex[which(toupper(batch_log_page$Sex) == "FEMALE")] <- "F"
+  batch_log_page$Sex[which(toupper(batch_log_page$Sex) == "MALE")] <- "M"
+  batch_log_page$Sex[which((toupper(batch_log_page$Sex) != "FEMALE") & (toupper(batch_log_page$Sex) != "MALE"))] <- "U"
+  
   # print warning message to screen is number of samples does not equal 96 or 192
   if ((nrow(batch_log_page) != 96) | (nrow(batch_log_page) != 192)){
     print("WARNING!!!  Total samples does equal 96 or 192")
@@ -75,6 +80,26 @@ create_manifest <- function(batch_log){
 
 batch_log <- function(extraction_log, redcap){
   run_time <- gsub(" ", "_", Sys.time())
+  # reads in the template and makes a copy and renames it to become final Infinium batch log output file
+  file.copy("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/R-7_Infinium_batch_log_template.xlsx", paste("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/", "Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
+  final_batch_log <- loadWorkbook(paste("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/", "Infinium_Batch_Log_", run_time, ".xlsx", sep=""), create=FALSE)
+  final_batch_log_subset <- readWorksheet(final_batch_log, sheet="batch info", startRow = 4, startCol = 1, header=TRUE)
+  batch_plates <- unlist(strsplit(extraction_log, split=",", fixed=TRUE))
+  redcap_file <- loadWorkbook(redcap, create=FALSE)
+  redcap_file_subset <- readWorksheet(redcap_file, sheet="CCPMBiobankSamples_DATA_2017-10")
+  total_batches_remaining <- length(batch_plates)
+  index_to_maintain_batch_order = total_batches_remaining + 1
+  
+  # iterate through as many batches as provided by user
+  while (total_batches_remaining != 0){
+    load_batch_ext_log <- loadWorkbook(batch_plates[(index_to_maintain_batch_order - total_batches_remaining)], create=FALSE)
+    read_batch_ext_log_subset <- readWorksheet(load_batch_ext_log, sheet = "batch info", startRow = 4, startCol = 1, header = TRUE)
+    
+    
+    total_batches_remaining <- total_batches_remaining - 1 # after finished with batch, subtract from total number of batches remaining
+    }
+  
+  saveWorkbook(final_batch_log)
   print("create infinium batch log works!")
 }
 
@@ -124,7 +149,7 @@ info_batch_log <- function(){
   verification_1 <- trimws(readLines("stdin", n=1), which="both")
   if ((toupper(verification_1) == "YES") | (toupper(verification_1) == "Y")){
     check_redcap <- function(){
-    cat("Name of REDCap data export file(s); if more than one separate names with comma (must be in same order as extraction qc/logs input): ");
+    cat("Name of REDCap data export file: ");
     redcap <- trimws(readLines("stdin", n=1), which = "both")
     cat("You entered the following: ", redcap)
     cat('\n')
