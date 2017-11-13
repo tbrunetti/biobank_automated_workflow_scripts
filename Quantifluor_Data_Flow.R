@@ -133,7 +133,7 @@ quantifluor_export <- function(extraction_log, results_file){
   reorder_all_fields <- subset(merged_df, select=c("run.date.1","user.1", "Mean", "CV....", "flags"))
   writeWorksheet(qc_ext_log, reorder_all_fields, sheet="batch info", startRow = 5, startCol =19, header=FALSE)
   saveWorkbook(qc_ext_log)
-
+  print("Data Transfer Successfully Completed!")
 }
 
 
