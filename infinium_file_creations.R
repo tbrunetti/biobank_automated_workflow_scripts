@@ -1,6 +1,7 @@
 require(XLConnect)
 require(readxl)
 require(gtools)
+require(stringr)
 
 #Get and set current directory
 setwd(getwd())
@@ -94,10 +95,19 @@ batch_log <- function(extraction_log, redcap){
   while (total_batches_remaining != 0){
     load_batch_ext_log <- loadWorkbook(batch_plates[(index_to_maintain_batch_order - total_batches_remaining)], create=FALSE)
     read_batch_ext_log_subset <- readWorksheet(load_batch_ext_log, sheet = "batch info", startRow = 4, startCol = 1, header = TRUE)
+    read_batch_ext_log_subset$num_well <- as.numeric(as.character(str_match(read_batch_ext_log_subset$cell, pattern = ("[0-9]{1,2}"))))
+    read_batch_ext_log_subset$letter_well <-  str_match(read_batch_ext_log_subset$cell, pattern = ("[A-Za-z]"))
+    sorted_by_infinium_row <- read_batch_ext_log_subset[order(read_batch_ext_log_subset$num_well, read_batch_ext_log_subset$letter_well),] # sort cells so can add infinium row
+    sorted_by_infinium_row$inf_row <- seq(1,nrow(sorted_by_infinium_row)) # adds infinium row numbers 1-96 
+    
+    # recodes row numbers if more than one batch exists
+    if ((index_to_maintain_batch_order - total_batches_remaining) > 1){
+      sorted_by_infinium_row$inf_row <- ((index_to_maintain_batch_order - total_batches_remaining)*96) + as.numeric(as.character(sorted_by_infinium_row$inf_row))  
+    }
     
     
     total_batches_remaining <- total_batches_remaining - 1 # after finished with batch, subtract from total number of batches remaining
-    }
+  }
   
   saveWorkbook(final_batch_log)
   print("create infinium batch log works!")
