@@ -76,7 +76,9 @@ create_manifest <- function(batch_log){
 ##        file (comma separated if list of them) and a redcap export xlsx     ##
 ##        file (comma separated if a list of them in the same order as the    ##
 ##        extraction_qc log file list)                                        ##
-##output:                                                                     ##
+##output: outputs xlsx that follows format of Infinium Batch Log file; one    ##
+##        file is generated no matter how batches are input -- all inputs     ##
+##        are concatenated together in one batch file                         ##
 ################################################################################
 
 batch_log <- function(extraction_log, redcap){
@@ -84,13 +86,17 @@ batch_log <- function(extraction_log, redcap){
   # reads in the template and makes a copy and renames it to become final Infinium batch log output file
   file.copy("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/R-7_Infinium_batch_log_template.xlsx", paste("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/", "Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
   final_batch_log <- loadWorkbook(paste("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/", "Infinium_Batch_Log_", run_time, ".xlsx", sep=""), create=FALSE)
+  setStyleAction(final_batch_log,XLC$"STYLE_ACTION.NONE")
   final_batch_log_subset <- readWorksheet(final_batch_log, sheet="batch info", startRow = 4, startCol = 1, header=TRUE)
   batch_plates <- unlist(strsplit(extraction_log, split=",", fixed=TRUE))
   redcap_file <- loadWorkbook(redcap, create=FALSE)
   redcap_file_subset <- readWorksheet(redcap_file, sheet="CCPMBiobankSamples_DATA_2017-10")
+  names(redcap_file_subset)[which(names(redcap_file_subset) == "btid")] <- "Biobank.ID" # rename redcap btid column name
   total_batches_remaining <- length(batch_plates)
   index_to_maintain_batch_order = total_batches_remaining + 1
+  more_than_one = index_to_maintain_batch_order - total_batches_remaining
   
+  final_concatenated_batches <- data.frame()
   # iterate through as many batches as provided by user
   while (total_batches_remaining != 0){
     load_batch_ext_log <- loadWorkbook(batch_plates[(index_to_maintain_batch_order - total_batches_remaining)], create=FALSE)
@@ -101,16 +107,32 @@ batch_log <- function(extraction_log, redcap){
     sorted_by_infinium_row$inf_row <- seq(1,nrow(sorted_by_infinium_row)) # adds infinium row numbers 1-96 
     
     # recodes row numbers if more than one batch exists
-    if ((index_to_maintain_batch_order - total_batches_remaining) > 1){
-      sorted_by_infinium_row$inf_row <- ((index_to_maintain_batch_order - total_batches_remaining)*96) + as.numeric(as.character(sorted_by_infinium_row$inf_row))  
+    if (more_than_one > 1){
+      sorted_by_infinium_row$inf_row <- ((index_to_maintain_batch_order - total_batches_remaining)*96) + as.numeric(as.character(sorted_by_infinium_row$inf_row))
+      add_redcap <- merge(x=sorted_by_infinium_row, y=redcap_file_subset, all.x=TRUE, by="Biobank.ID") # left merge on Biobank ID column
+      add_redcap <- add_redcap[mixedorder(add_redcap$Position, decreasing = FALSE),]
+      add_redcap_subset <- subset(add_redcap, c("avg..ng.ul.", "notes"))
+      add_redcap_subset2 <- subset(add_redcap, c("sex", "race", "ethnicity"))
+      writeWorksheet(final_batch_log, add_redcap$inf_row, startCol = 1, header=F, startRow = (((index_to_maintain_batch_order - total_batches_remaining)*96) +6))
+      writeWorksheet(final_batch_log, add_redcap$Biobank.ID, startCol = 3, header=F, startRow = (((index_to_maintain_batch_order - total_batches_remaining)*96) +6))
+      writeWorksheet(final_batch_log, add_redcap_subset, startCol = 12, header = F, startRow = (((index_to_maintain_batch_order - total_batches_remaining)*96) +6))
+      writeWorksheet(final_batch_log, add_redcap_subset2, startCol = 15, header = F, startRow = (((index_to_maintain_batch_order - total_batches_remaining)*96) +6))
+    }else{
+    add_redcap <- merge(x=sorted_by_infinium_row, y=redcap_file_subset, all.x=TRUE, by="Biobank.ID") # left merge on Biobank ID column
+    add_redcap <- add_redcap[mixedorder(add_redcap$Position, decreasing = FALSE),]
+    add_redcap_subset <- subset(add_redcap, c("avg..ng.ul.", "notes"))
+    add_redcap_subset2 <- subset(add_redcap, c("sex", "race", "ethnicity"))
+    writeWorksheet(final_batch_log, add_redcap$inf_row, startCol = 1, header=F, startRow = 5)
+    writeWorksheet(final_batch_log, add_redcap$Biobank.ID, startCol = 3, header=F, startRow = 5)
+    writeWorksheet(final_batch_log, add_redcap_subset, startCol = 12, header=F, startRow = 5)
+    writeWorksheet(final_batch_log, add_redcap_subset2, startCol = 15, header = F, startRow = 5)
     }
-    
     
     total_batches_remaining <- total_batches_remaining - 1 # after finished with batch, subtract from total number of batches remaining
   }
   
   saveWorkbook(final_batch_log)
-  print("create infinium batch log works!")
+  print("Successfully finshed creating Infinium batch log!")
 }
 
 
