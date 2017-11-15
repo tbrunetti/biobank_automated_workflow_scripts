@@ -1,3 +1,6 @@
+## BEFORE USING:
+##1.  Make sure BTID/BIOBANK IDs are unique to each sample
+
 require(XLConnect)
 require(readxl)
 require(gtools)
