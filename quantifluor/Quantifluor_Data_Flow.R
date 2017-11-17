@@ -1,3 +1,6 @@
+#Windows OS illegal characters in file name: 
+#Alt+0 through Alt+32 or the following characters: \\ \\ / [ ] : | < > + ; = . ? "
+
 require(XLConnect)
 require(readxl)
 require(gtools)
@@ -15,6 +18,9 @@ setwd(getwd())
 ################################################################################
 quantifluor_import <- function(extraction_log){
   run_time <- gsub(" ", "_", Sys.time())
+  run_time <- gsub("_([0-9]{1,2}):", "_\\1h", run_time)
+  run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
+  run_time <- paste(run_time, "s", sep="")
   print("Generating Sample Sheet for Quantifluor assay...")
   batch_page <- read_excel(extraction_log, sheet = "batch info", skip=3)
   rack_id <- batch_page$RackID[2] #equivalent to L6 cell
@@ -42,6 +48,9 @@ quantifluor_import <- function(extraction_log){
 ################################################################################
 quantifluor_export <- function(extraction_log, results_file){
   run_time <- gsub(" ", "_", Sys.time())
+  run_time <- gsub("_([0-9]{1,2}):", "_\\1h", run_time)
+  run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
+  run_time <- paste(run_time, "s", sep="")
   print(paste("Export works", extraction_log, results_file, sep=" "))
   qc_ext_log <- loadWorkbook(extraction_log, create=FALSE)
   setStyleAction(qc_ext_log,XLC$"STYLE_ACTION.NONE")
