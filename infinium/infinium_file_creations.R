@@ -19,6 +19,9 @@ setwd(getwd())
 
 create_manifest <- function(batch_log){
   run_time <- gsub(" ", "_", Sys.time())
+  run_time <- gsub("_([0-9]{1,2}):", "_\\1h", run_time)
+  run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
+  run_time <- paste(run_time, "s", sep="")
   batch_log_page <- read_excel(batch_log, sheet = "batch info", skip=3)
   batch_log_page <- batch_log_page[mixedorder(batch_log_page$`row*`, decreasing = FALSE),] # sort by infinum row in ascending order
   
@@ -92,6 +95,9 @@ create_manifest <- function(batch_log){
 
 batch_log <- function(extraction_log, redcap){
   run_time <- gsub(" ", "_", Sys.time())
+  run_time <- gsub("_([0-9]{1,2}):", "_\\1h", run_time)
+  run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
+  run_time <- paste(run_time, "s", sep="")
   # reads in the template and makes a copy and renames it to become final Infinium batch log output file
   file.copy("R-7_Infinium_batch_log_template.xlsx", paste("Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
   final_batch_log <- loadWorkbook(paste("Infinium_Batch_Log_", run_time, ".xlsx", sep=""), create=FALSE)
