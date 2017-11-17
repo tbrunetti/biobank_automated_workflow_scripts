@@ -1,6 +1,6 @@
 ## BEFORE USING:
 ##1.  Make sure BTID/BIOBANK IDs are unique to each sample
-
+##2.  Make sure the qc/batch log infinium template is in the same location as this script
 require(XLConnect)
 require(readxl)
 require(gtools)
@@ -99,13 +99,13 @@ batch_log <- function(extraction_log, redcap){
   final_batch_log_subset <- readWorksheet(final_batch_log, sheet="batch info", startRow = 4, startCol = 1, header=TRUE)
   batch_plates <- unlist(strsplit(extraction_log, split=",", fixed=TRUE))
   redcap_file <- loadWorkbook(redcap, create=FALSE)
-  redcap_file_subset <- readWorksheet(redcap_file, sheet="CCPMBiobankSamples_DATA_2017-10")
+  print(paste("Reading REDCap Data from Sheet: ", getSheets(redcap_file)[1], sep=""))
+  redcap_file_subset <- readWorksheet(redcap_file, sheet=getSheets(redcap_file)[1])
+  names(redcap_file_subset)[which(names(redcap_file_subset) == "gender")] <- "sex" # rename redcap gender column name
   names(redcap_file_subset)[which(names(redcap_file_subset) == "btid")] <- "Biobank.ID" # rename redcap btid column name
   total_batches_remaining <- length(batch_plates)
   index_to_maintain_batch_order = total_batches_remaining + 1
   more_than_one = total_batches_remaining
-  print(total_batches_remaining)
-  print(more_than_one)
   final_concatenated_batches <- data.frame()
   # iterate through as many batches as provided by user
   while (total_batches_remaining != 0){
