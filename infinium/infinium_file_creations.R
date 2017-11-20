@@ -115,7 +115,6 @@ batch_log <- function(extraction_log, redcap){
   final_concatenated_batches <- data.frame()
   # iterate through as many batches as provided by user
   while (total_batches_remaining != 0){
-    load_batch_ext_log <- loadWorkbook("/home/brunettt/Desktop/Biobank_workflow_automation/Infinium/R-5_Extraction_QC_batch_log_example_rack_32352_BEFORE-TEST.xlsx", create=FALSE)
     load_batch_ext_log <- loadWorkbook(batch_plates[(index_to_maintain_batch_order - total_batches_remaining)], create=FALSE)
     setStyleAction(load_batch_ext_log,XLC$"STYLE_ACTION.NONE")
     read_batch_ext_log_subset <- readWorksheet(load_batch_ext_log, sheet = "batch info", startRow = 4, startCol = 1, header = TRUE)
