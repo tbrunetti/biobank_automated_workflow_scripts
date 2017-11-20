@@ -76,7 +76,7 @@ quantifluor_export <- function(extraction_log, results_file){
       plate_one_only$flags[i] <- "OOR high"
     }
     else{
-      plate_one_only$flags[i] <- paste(plate_one_only$flags[i], "ORR", sep="; ")
+      plate_one_only$flags[i] <- paste(plate_one_only$flags[i], "OOR", sep="; ")
     }
   }
   index_flag_mean_threshold <- which(as.numeric(as.character(gsub("<|>", "", plate_one_only$Mean)))<10.0)
