@@ -1,3 +1,4 @@
+# UPDATED FROM BIOBANK
 ## BEFORE USING:
 ##1.  Make sure BTID/BIOBANK IDs are unique to each sample
 ##2.  Make sure the qc/batch log infinium template is in the same location as this script
