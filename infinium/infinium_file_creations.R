@@ -7,6 +7,7 @@ require(readxl)
 require(gtools)
 require(stringr)
 
+
 #Get and set current directory
 setwd(getwd())
 
@@ -48,10 +49,22 @@ create_manifest <- function(batch_log){
   batch_log_page$`Mass of DNA used in WGA` <- NA
   # end of new column headers in final manifest file
   
-  new_workbook <- loadWorkbook(paste("infinium_sample_manifest_", run_time, ".xlsx", sep=""), create=TRUE) # create infinium output
+  file_name <- unlist(strsplit(batch_log, split=".", fixed=TRUE))[1]
+  new_workbook <- loadWorkbook(paste(file_name, "_infinium_sample_manifest_", run_time, ".xlsx", sep=""), create=TRUE) # create infinium output
   createSheet(new_workbook, "Sample import") # create and name sheet in workbook
  
   batch_log_page$`Is Control`[which(batch_log_page$Well %in% c("A1", "C8", "C9", "F4", "F5", "H12"))] <- 1 # put 1 in is control is match one of control well positions
+  
+  # start of loop to check if Wells need to be padded with 0
+  for (i in 1:length(batch_log_page$Well)){
+    if (grepl("[0-9]{2}", batch_log_page$Well[i])){
+      next
+    }else{
+      padded <- paste(substr(x=batch_log_page$Well[i], start=1, stop=1), "0", substr(x=batch_log_page$Well[i], start=2, stop=2),sep="")
+      batch_log_page$Well[i] <- padded
+    }
+  }
+  # end of loop to check if Wells need to be padded with 0
   
   # change sex to abbreviations
   batch_log_page$Sex[which(toupper(batch_log_page$Sex) == "FEMALE")] <- "F"
