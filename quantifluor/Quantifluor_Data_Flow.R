@@ -1,3 +1,4 @@
+# UPDATED FROM BIOBANK
 #Windows OS illegal characters in file name: 
 #Alt+0 through Alt+32 or the following characters: \\ \\ / [ ] : | < > + ; = . ? "
 
@@ -52,12 +53,12 @@ quantifluor_export <- function(extraction_log, results_file){
   run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
   run_time <- paste(run_time, "s", sep="")
   print(paste("Export works", extraction_log, results_file, sep=" "))
-  file.copy(extraction_log, paste(unlist(strsplit(extraction_log, split=".", fixed=T))[1], "_", run_time, ".xlsx", sep=""))
-  qc_ext_log <- loadWorkbook(paste(unlist(strsplit(extraction_log, split=".", fixed=T))[1], "_", run_time, ".xlsx", sep=""), create=FALSE)
+  file.copy(extraction_log, paste("qc_extraction_log_post_quantifluor_export_", run_time, ".xlsx", sep=""))
+  qc_ext_log <- loadWorkbook(paste("qc_extraction_log_post_quantifluor_export_", run_time, ".xlsx", sep=""), create=FALSE)
   setStyleAction(qc_ext_log,XLC$"STYLE_ACTION.NONE")
   qc_ext_log_data <- readWorksheet(qc_ext_log, sheet= "batch info")
   qc_ext_log_subset <- readWorksheet(qc_ext_log, sheet="batch info", startRow =4, endCol = 28 )
-  barcode_in_ext_log <- qc_ext_log_subset$RackID[1] 
+  barcode_in_ext_log <- qc_ext_log_subset$RackID[2] 
   quant_results <- loadWorkbook(results_file, create=FALSE)
   fieldGroup_table <- readWorksheet(quant_results, sheet = "Sheet1", startRow=1, startCol = 1, endCol = 2, endRow = 11) # read in table to get barcode info
   barcode_in_results <- fieldGroup_table[which(fieldGroup_table$Field.Group == "Barcode (Plate 1):"), ]$Col2 # barcode info extraction
