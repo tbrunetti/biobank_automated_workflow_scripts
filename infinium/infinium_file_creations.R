@@ -99,9 +99,24 @@ batch_log <- function(extraction_log, redcap){
   run_time <- gsub("_([0-9]{1,2}):", "_\\1h", run_time)
   run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
   run_time <- paste(run_time, "s", sep="")
+  if (length(unlist(strsplit(extraction_log, split=",", fixed=TRUE))) > 1){
+    file_name <- ""
+    batch_names <- unlist(strsplit(extraction_log, split=",", fixed=TRUE))
+    for (i in 1:length(batch_names)){
+      each_file <- unlist(strsplit(batch_names[i], split = ".", fixed=TRUE))[1]
+      if (i > 1){
+        file_name <- paste(file_name, "_", each_file, sep="")
+      }else{
+        file_name <- each_file
+      }
+    }
+    }else{
+      file_name <- unlist(strsplit(extraction_log, split=".", fixed=TRUE))[1]
+    }
+
   # reads in the template and makes a copy and renames it to become final Infinium batch log output file
-  file.copy("R-7_Infinium_batch_log_template.xlsx", paste("Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
-  final_batch_log <- loadWorkbook(paste("Infinium_Batch_Log_", run_time, ".xlsx", sep=""), create=FALSE)
+  file.copy("R-7_Infinium_batch_log_template.xlsx", paste(file_name, "_Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
+  final_batch_log <- loadWorkbook(paste(file_name, "_Infinium_Batch_Log_", run_time, ".xlsx", sep=""), create=FALSE)
   setStyleAction(final_batch_log,XLC$"STYLE_ACTION.NONE")
   final_batch_log_subset <- readWorksheet(final_batch_log, sheet="batch info", startRow = 4, startCol = 1, header=TRUE)
   batch_plates <- unlist(strsplit(extraction_log, split=",", fixed=TRUE))
