@@ -23,13 +23,14 @@ quantifluor_import <- function(extraction_log){
   run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
   run_time <- paste(run_time, "s", sep="")
   print("Generating Sample Sheet for Quantifluor assay...")
+  file_name <- unlist(strsplit(extraction_log, split=".", fixed=TRUE))[1]
   batch_page <- read_excel(extraction_log, sheet = "batch info", skip=3)
   rack_id <- batch_page$RackID[2] #equivalent to L6 cell
   batch_page['rack barcode'] <- rack_id
   select_samples <- subset(batch_page, !(batch_page$cell %in% c("A1", "C8", "C9", "F4", "F5", "H12")), select=c("rack barcode", "Biobank ID", "Position")) # ignore control wells
   select_samples <- select_samples[mixedorder(select_samples$Position),] # reoder position by A2, A3...etc...
   select_samples['sample #'] <- paste("SPL", row.names(select_samples), sep="") # add incremental sample number prefix SPL
-  save_excel <- loadWorkbook(paste("sample_sheet_import_quantifluor_", run_time, ".xlsx", sep=""), create=TRUE) # creates Excel workboot
+  save_excel <- loadWorkbook(paste(file_name, '_QF_samplesheet_import_', run_time, ".xlsx", sep=""), create=TRUE) # creates Excel workboot
   createSheet(save_excel, "Sheet 1") # creates sheet in above workbook
   writeWorksheet(object = save_excel, data = select_samples, sheet = "Sheet 1") # write to worksheet
   saveWorkbook(save_excel) # save worksheet
@@ -53,8 +54,9 @@ quantifluor_export <- function(extraction_log, results_file){
   run_time <- gsub("([0-9]{1,2}):", "\\1m", run_time)
   run_time <- paste(run_time, "s", sep="")
   print(paste("Export works", extraction_log, results_file, sep=" "))
-  file.copy(extraction_log, paste("qc_extraction_log_post_quantifluor_export_", run_time, ".xlsx", sep=""))
-  qc_ext_log <- loadWorkbook(paste("qc_extraction_log_post_quantifluor_export_", run_time, ".xlsx", sep=""), create=FALSE)
+  file_name <- unlist(strsplit(extraction_log, split=".", fixed=TRUE))[1]
+  file.copy(extraction_log, paste(file_name, '_post_QF_results_export_', run_time, ".xlsx", sep=""))
+  qc_ext_log <- loadWorkbook(paste(file_name, '_post_QF_results_export_', run_time, ".xlsx", sep=""), create=FALSE)
   setStyleAction(qc_ext_log,XLC$"STYLE_ACTION.NONE")
   qc_ext_log_data <- readWorksheet(qc_ext_log, sheet= "batch info")
   qc_ext_log_subset <- readWorksheet(qc_ext_log, sheet="batch info", startRow =4, endCol = 28 )
@@ -141,6 +143,9 @@ quantifluor_export <- function(extraction_log, results_file){
   # merge data together
   merged_df <- merge(qc_ext_log_subset, plate_one_only, by=c("Biobank.ID", "cell"), all.y = T) # all.y=T to get spaces for controls
   merged_df <- merged_df[mixedorder(merged_df$cell),] # reoder position by A2, A3...etc...
+  merged_df$Mean[which(merged_df$cell %in% c("A1", "C8", "C9", "F4", "F5", "H12"))] <- '--'
+  merged_df$CV....[which(merged_df$cell %in% c("A1", "C8", "C9", "F4", "F5", "H12"))] <- '--'
+  merged_df$flags[which(merged_df$cell %in% c("A1", "C8", "C9", "F4", "F5", "H12"))] <- NA
   reorder_all_fields <- subset(merged_df, select=c("run.date.1","user.1", "Mean", "CV....", "flags"))
   writeWorksheet(qc_ext_log, reorder_all_fields, sheet="batch info", startRow = 5, startCol =19, header=FALSE)
   saveWorkbook(qc_ext_log)
