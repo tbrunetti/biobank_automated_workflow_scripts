@@ -263,7 +263,11 @@ info_batch_log <- function(){
 ##function: get_user_input()                                                  ##
 ##input:  None -- prompts user for method i.e. create infinium batch log OR   ##
 ##        create infinium sample manifest                                     ##
-##output:                                                                     ##
+##output: If method selected is infinium batch log and all info is correctly  ##
+##        entered, calls function info_batch_log(); if method selected is     ##
+##        infinium sample manifest and all info is correctly entered, calls   ##
+##        function info_manifest(); else continues to prompt user for info    ##
+##        until user selects quit or exits program                            ##
 ################################################################################
 
 get_user_input <- function(){
