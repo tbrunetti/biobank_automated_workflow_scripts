@@ -193,6 +193,60 @@ batch_log <- function(extraction_log, redcap){
   print("Successfully finshed creating Infinium batch log!")
 }
 
+################################################################################
+##function: update_log(batch_log, redcap)                                     ##
+##input:  called in info_update_log();name of already created infinium        ## 
+##        batch log (.xlsx) and a redcap export xlsx file                     ##
+##output: outputs xlsx that follows format of Infinium Batch Log file with    ##
+##        updated REDCap Information for select wells                         ##
+################################################################################
+update_log <- function(batch_log, redcap){
+  get_ids <- function(){
+    cat("comma separted list (no spaces) of Biobank IDs that need to be updated: ")
+    ids <- trimws(readLines("stdin", n=1), which="both")
+    cat("Is this correct? (Y/N/Q) ")
+    cat("\n")
+    verification <- trimws(readLines("stdin", n=1), which="both")
+    if ((toupper(verification) =="Y") | (toupper(verification) == "YES")){
+      return(update(batch_log = batch_log, redcap = redcap, ids = ids))
+    }else if((toupper(verification) =="N") | (toupper(verification) == "NO")){
+      return(get_ids())
+    }else{
+      stop("Exiting program.  Goodbye!")
+    }
+  }
+  
+  update <- function(batch_log, redcap, ids){
+    batch_log_to_update <- loadWorkbook(batch_log, create=FALSE)
+    setStyleAction(batch_log_to_update,XLC$"STYLE_ACTION.NONE")
+    read_batch_info_sheet <- readWorksheet(batch_log_to_update, sheet = "batch info", header=FALSE)
+    ids_to_update = (strsplit(ids, ",")[[1]])
+    #which(read_batch_info_sheet$Col3 %in% ids_to_update) #Col3 is location of BTID in batch log file
+      
+    load_redcap <- loadWorkbook(redcap, create=FALSE)
+    redcap_sheet <- readWorksheet(load_redcap, sheet = getSheets(load_redcap)[1])
+    for (btid in ids_to_update){
+      if(nrow(redcap_sheet[which(redcap_sheet$btid %in% btid),]) == 1){
+        writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"gender"], sheet = "batch info", 
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 15)
+        writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"race"], sheet = "batch info", 
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 16)
+        writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"ethnicity"], sheet = "batch info", 
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 17)
+        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"race"])
+        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"ethnicity"])
+        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"gender"])
+      }else{
+      stop(paste("Multiple BTIDs exist in REDCap for the following BTID:", btid, "\n",
+                 "Please check the REDCap file to determine which entry is correct and delete the duplicate(s) and rerun this script", sep = " "))
+      }
+    }
+    saveWorkbook(batch_log_to_update) #overwrite existing
+  }
+  # initiate function call
+  get_ids()
+}
+
 
 
 ################################################################################
@@ -260,6 +314,48 @@ info_batch_log <- function(){
 
 
 ################################################################################
+##function: info_update_log()                                                 ##
+##input:  None -- prompts user for more information for updating an already   ##
+##        existing infinium batch log (.xlsx)                                 ##
+##output: returns function call to update_log(batch_log, redcap) OR           ##
+##        recurvisely calls info_update_log() unless user requests to exit    ##
+################################################################################
+info_update_log <- function(){
+  cat("Name of infinium batch log to update: ")
+  log_file <- trimws(readLines("stdin", n=1), which="both")
+  cat("You entered the following: ", log_file)
+  cat("\n")
+  cat("Is this correct? (Y/N/Q)")
+  verification_1 <- trimws(readLines("stdin", n=1), which="both")
+  if ((toupper(verification_1) == "YES") | (toupper(verification_1) == "Y")){
+    check_redcap <- function(){
+      cat("Name of REDCap data export file: ");
+      redcap <- trimws(readLines("stdin", n=1), which = "both")
+      cat("You entered the following: ", redcap)
+      cat('\n')
+      cat("Is this correct? (Y/N/Q) ")
+      verification_2 <- trimws(readLines("stdin", n=1), which="both")
+      return(list(redcap, verification_2))
+    }
+    output <- check_redcap()
+    if ((toupper(output[2]) == "YES") | (toupper(output[2]) == "Y")) {
+      return(update_log(batch_log = log_file, redcap = unlist(output[1])))
+    }
+    else if((toupper(output[2]) == "NO") | (toupper(output[2]) == "N")){
+      return(output <- check_redcap())
+    }else{
+      stop("Exiting program.  Good Bye!")
+    }
+  }else if((toupper(verification_1) == "NO") | (toupper(verification_1) =="N")){
+    return(info_update_log())
+  }else{
+    stop("Exiting program.  Good Bye!")
+  }
+}
+
+
+
+################################################################################
 ##function: get_user_input()                                                  ##
 ##input:  None -- prompts user for method i.e. create infinium batch log OR   ##
 ##        create infinium sample manifest                                     ##
@@ -283,6 +379,9 @@ get_user_input <- function(){
     }else if (((toupper(verification) == "Y") | (toupper(verification) == "YES")) & 
   ((toupper(method) == "MANIFEST") | (toupper(method) == "M"))){
       return(info_manifest())
+    }else if (((toupper(verification) == "Y") | (toupper(verification) == "YES")) & 
+      ((toupper(method) == "UPDATE") | (toupper(method) == "U"))){
+      return(info_update_log())
     }else if ((toupper(verification) == "NO") | (toupper(verification) =="N")){
       return(get_user_input())
     }else{
