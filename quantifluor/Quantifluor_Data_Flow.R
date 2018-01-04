@@ -83,7 +83,7 @@ quantifluor_export <- function(extraction_log, results_file){
       plate_one_only$flags[i] <- paste(plate_one_only$flags[i], "OOR", sep="; ")
     }
   }
-  index_flag_mean_threshold <- which(as.numeric(as.character(gsub("<|>", "", plate_one_only$Mean)))<10.0)
+  index_flag_mean_threshold <- which(as.numeric(as.character(gsub("<|>", "", plate_one_only$Mean)))<3.0)
   for (i in index_flag_mean_threshold){
     if (is.na(plate_one_only$flags[i]) == TRUE){
       plate_one_only$flags[i] <- "below limit for Infinium"
