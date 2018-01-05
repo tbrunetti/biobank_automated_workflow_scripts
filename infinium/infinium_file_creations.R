@@ -221,32 +221,31 @@ update_log <- function(batch_log, redcap){
     setStyleAction(batch_log_to_update,XLC$"STYLE_ACTION.NONE")
     read_batch_info_sheet <- readWorksheet(batch_log_to_update, sheet = "batch info", header=FALSE)
     ids_to_update = (strsplit(ids, ",")[[1]])
-    #which(read_batch_info_sheet$Col3 %in% ids_to_update) #Col3 is location of BTID in batch log file
       
     load_redcap <- loadWorkbook(redcap, create=FALSE)
     redcap_sheet <- readWorksheet(load_redcap, sheet = getSheets(load_redcap)[1])
     for (btid in ids_to_update){
       if(nrow(redcap_sheet[which(redcap_sheet$btid %in% btid),]) == 1){
         writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"gender"], sheet = "batch info", 
-                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 15)
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 15, header=FALSE)
         writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"race"], sheet = "batch info", 
-                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 16)
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 16, header=FALSE)
         writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"ethnicity"], sheet = "batch info", 
-                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 17)
-        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"race"])
-        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"ethnicity"])
-        print(redcap_sheet[which(redcap_sheet$btid %in% btid),"gender"])
-      }else{
+                       startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 17, header=FALSE)
+      }else if (nrow(redcap_sheet[which(redcap_sheet$btid %in% btid),]) > 1){
       stop(paste("Multiple BTIDs exist in REDCap for the following BTID:", btid, "\n",
                  "Please check the REDCap file to determine which entry is correct and delete the duplicate(s) and rerun this script", sep = " "))
+      }else{
+        stop(paste("The following BTID does not exist in either the batch log file or within the REDCap file:", btid, "\n",
+                   "Please ascertain this BTID is present in both files", sep = " "))
       }
     }
     saveWorkbook(batch_log_to_update) #overwrite existing
+    print("Successfully finished updating batch log file!")
   }
   # initiate function call
   get_ids()
 }
-
 
 
 ################################################################################
@@ -271,7 +270,7 @@ info_manifest <- function(){
   }else if ((toupper(verification) == "N") | (toupper(verification)=="NO")){
     return(info_manifest())
   }else{
-    stop("Exiting program.  Good Bye!")
+    stop("Exiting program.  Goodbye!")
   }
 }
 
@@ -307,7 +306,7 @@ info_batch_log <- function(){
     }else if ((toupper(output[2]) == "NO") | (toupper(output[2]) == "N")){
       return(output <- check_redcap())
     }else{
-      stop("Exiting Program. Good Bye!")
+      stop("Exiting Program. Goodbye!")
     }
   }
 }
@@ -344,12 +343,12 @@ info_update_log <- function(){
     else if((toupper(output[2]) == "NO") | (toupper(output[2]) == "N")){
       return(output <- check_redcap())
     }else{
-      stop("Exiting program.  Good Bye!")
+      stop("Exiting program.  Goodbye!")
     }
   }else if((toupper(verification_1) == "NO") | (toupper(verification_1) =="N")){
     return(info_update_log())
   }else{
-    stop("Exiting program.  Good Bye!")
+    stop("Exiting program.  Goodbye!")
   }
 }
 
@@ -367,7 +366,7 @@ info_update_log <- function(){
 ################################################################################
 
 get_user_input <- function(){
-  cat("Create infinium batch log (LOG/log/l/L) or create infinium sample manifest (manifest/MANIFEST/M/m):  ");
+  cat("Create infinium batch log (LOG/log/l/L) or create infinium sample manifest (manifest/MANIFEST/M/m) or update an existing infinium batch log (UPDATE/update/U/u):  ");
   method <- trimws(readLines("stdin", n=1), which="both");
   cat("You entered the following:  ", method)
   cat("\n")
@@ -385,7 +384,7 @@ get_user_input <- function(){
     }else if ((toupper(verification) == "NO") | (toupper(verification) =="N")){
       return(get_user_input())
     }else{
-      stop("Exiting Program.  Good Bye!")
+      stop("Exiting Program.  Goodbye!")
     }
 }
 
