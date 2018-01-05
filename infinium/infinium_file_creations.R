@@ -105,7 +105,7 @@ create_manifest <- function(batch_log){
 ##        extraction_qc log file list)                                        ##
 ##output: outputs xlsx that follows format of Infinium Batch Log file; one    ##
 ##        file is generated no matter how batches are input -- all inputs     ##
-##        are concatenated together in one batch file                         ##
+##        are concatenated together into one batch file                       ##
 ################################################################################
 
 batch_log <- function(extraction_log, redcap){
@@ -139,10 +139,20 @@ batch_log <- function(extraction_log, redcap){
   redcap_file_subset <- readWorksheet(redcap_file, sheet=getSheets(redcap_file)[1])
   names(redcap_file_subset)[which(names(redcap_file_subset) == "gender")] <- "sex" # rename redcap gender column name
   names(redcap_file_subset)[which(names(redcap_file_subset) == "btid")] <- "Biobank.ID" # rename redcap btid column name
+  
+  # check for duplicate Biobank IDs in REDCap file
+  # if a BTID is duplicated in REDCap, batch log will not be generated
+  if (any(duplicated(redcap_file_subset$Biobank.ID)) == TRUE){
+    file.remove(paste(file_name, "_Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
+    stop(paste("WARNING!  Duplicate BTIDs exist in the REDCap file that may be contradictory.  Please check the following BTIDs and remove the duplicate entries.",
+               redcap_file_subset$Biobank.ID[which(duplicated(redcap_file_subset$Biobank.ID))], "Batch log will not be generated.  Exiting program. Goodbye!", sep = "\n"))
+  }
+  
   total_batches_remaining <- length(batch_plates)
   index_to_maintain_batch_order = total_batches_remaining + 1
   more_than_one = total_batches_remaining
   final_concatenated_batches <- data.frame()
+  
   # iterate through as many batches as provided by user
   while (total_batches_remaining != 0){
     load_batch_ext_log <- loadWorkbook(batch_plates[(index_to_maintain_batch_order - total_batches_remaining)], create=FALSE)
@@ -153,6 +163,14 @@ batch_log <- function(extraction_log, redcap){
     read_batch_ext_log_subset$letter_well <-  str_match(read_batch_ext_log_subset$cell, pattern = ("[A-Za-z]"))
     sorted_by_infinium_row <- read_batch_ext_log_subset[order(read_batch_ext_log_subset$num_well, read_batch_ext_log_subset$letter_well),] # sort cells so can add infinium row
     sorted_by_infinium_row$inf_row <- seq(1,nrow(sorted_by_infinium_row)) # adds infinium row numbers 1-96 
+    
+    # Create exception: no batch log created if BTID is missing (checks this per batch/file)
+    # missing means multiple of 90 does not exist; defined as cell that does not start with a number 0-9)
+    if ((length(grep("^[0-9]", read_batch_ext_log_subset$Biobank.ID, perl=TRUE, value=FALSE)) %% 90) != 0){
+      file.remove(paste(file_name, "_Infinium_Batch_Log_", run_time, ".xlsx", sep=""))
+      stop("Missing BTIDs present.  Batch log will not be created until this issue is resolved.  Exiting program.  Goodbye!")
+    }
+    # end of exception #
     
     # recodes row numbers if more than one batch exists
     if (more_than_one > 1){
@@ -201,11 +219,11 @@ batch_log <- function(extraction_log, redcap){
 ##        updated REDCap Information for select wells                         ##
 ################################################################################
 update_log <- function(batch_log, redcap){
+  # get_ids is a function prompting user to input BTIDs that need updating
   get_ids <- function(){
     cat("comma separted list (no spaces) of Biobank IDs that need to be updated: ")
     ids <- trimws(readLines("stdin", n=1), which="both")
     cat("Is this correct? (Y/N/Q) ")
-    cat("\n")
     verification <- trimws(readLines("stdin", n=1), which="both")
     if ((toupper(verification) =="Y") | (toupper(verification) == "YES")){
       return(update(batch_log = batch_log, redcap = redcap, ids = ids))
@@ -216,14 +234,18 @@ update_log <- function(batch_log, redcap){
     }
   }
   
+  # update is a function that actually performs the physical update to the batch log spreadsheet
   update <- function(batch_log, redcap, ids){
     batch_log_to_update <- loadWorkbook(batch_log, create=FALSE)
     setStyleAction(batch_log_to_update,XLC$"STYLE_ACTION.NONE")
     read_batch_info_sheet <- readWorksheet(batch_log_to_update, sheet = "batch info", header=FALSE)
-    ids_to_update = (strsplit(ids, ",")[[1]])
+    ids_to_update = trimws(strsplit(ids, ",")[[1]], which="both") # parse user input of BTIDs to update and trim any trailing whitespace between commas from user input
       
     load_redcap <- loadWorkbook(redcap, create=FALSE)
     redcap_sheet <- readWorksheet(load_redcap, sheet = getSheets(load_redcap)[1])
+    
+    # for each BTID input by user, search in redcap file and update batch log file accordingly
+    # exceptions caught:  multiple BTIDs exist or BTID does not exist in either batch log file or REDCap file
     for (btid in ids_to_update){
       if(nrow(redcap_sheet[which(redcap_sheet$btid %in% btid),]) == 1){
         writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"gender"], sheet = "batch info", 
@@ -233,7 +255,7 @@ update_log <- function(batch_log, redcap){
         writeWorksheet(batch_log_to_update, data = redcap_sheet[which(redcap_sheet$btid %in% btid),"ethnicity"], sheet = "batch info", 
                        startRow = which(read_batch_info_sheet$Col3 %in% btid), startCol = 17, header=FALSE)
       }else if (nrow(redcap_sheet[which(redcap_sheet$btid %in% btid),]) > 1){
-      stop(paste("Multiple BTIDs exist in REDCap for the following BTID:", btid, "\n",
+        stop(paste("Multiple BTIDs exist in REDCap for the following BTID:", btid, "\n",
                  "Please check the REDCap file to determine which entry is correct and delete the duplicate(s) and rerun this script", sep = " "))
       }else{
         stop(paste("The following BTID does not exist in either the batch log file or within the REDCap file:", btid, "\n",
