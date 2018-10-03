@@ -93,6 +93,51 @@ generate_manifest <- function(manifestPath, detailedPath, redcapPath){
   all[which(is.na(all$Name)), "Name"] <- all$Sample_ID[which(is.na(all$Name))]
   all$Name <- paste0("\"", all$Name, "\"")
   
+  # race column maniulations (BC can't have literal NA here, must be NA if empty)
+  all$Race[which(trimws(all$Race, which = "both") == "NA")] <- NA
+  options = c("Black or African American Hispanic",
+              "Black or African American Non-Hispanic",
+              "Black or African American Patient Refused",
+              "Black or African American Unknown",
+              "Black or African American Unspecified",
+              "Asian Hispanic",
+              "Asian Non-Hispanic",
+              "Asian Patient Refused",
+              "Asian Unknown",
+              "Asian Unspecified",
+              "White or Caucasian Hispanic",
+              "White or Caucasian Non-Hispanic",
+              "White or Caucasian Patient Refused",
+              "White or Caucasian Unknown",
+              "White or Caucasian Unspecified",
+              "More Than One Race Hispanic",
+              "More Than One Race Non-Hispanic",
+              "More Than One Race Patient Refused",
+              "More Than One Race Unknown",
+              "More Than One Race Unspecified",
+              "Native Hawaiian and Other Pacific Islander Hispanic",
+              "Native Hawaiian and Other Pacific Islander Non-Hispanic",
+              "Native Hawaiian and Other Pacific Islander Patient Refused",
+              "Native Hawaiian and Other Pacific Islander Unknown",
+              "Native Hawaiian and Other Pacific Islander Unspecified",
+              "Other Hispanic",
+              "Other Non-Hispanic",
+              "Other Patient Refused",
+              "Other Unknown",
+              "Other Unspecified",
+              "American Indian and Alaska Native Hispanic",
+              "American Indian and Alaska Native Non-Hispanic",
+              "American Indian and Alaska Native Patient Refused",
+              "American Indian and Alaska Native Unknown",
+              "American Indian and Alaska Native Unspecified",
+              "Unknown Hispanic",
+              "Unknown Non-Hispanic",
+              "Unknown Patient Refused",
+              "Unknown Unknown",
+              "Unknown Unspecified"
+              )
+  
+  all$Race[which(!(all$Race %in% options))]<-NA
   
   # get subset of all new column names
   final_set <- subset(all, select = c("Sample_ID", "SentrixBarcode_A", "SentrixPosition_A", "Sample_Plate", "Sample_Well", 
