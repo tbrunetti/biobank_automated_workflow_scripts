@@ -171,7 +171,7 @@ if [ "$totalNewFiles" != 0 ]; then
 			fi
 		fi
 		
-	done<"needToRun_$TIMESTAMP.txt"
+	done<${LOG_DIR}"needToRun_$TIMESTAMP.txt"
 else
 	echo "Everything is up to date. No new manifests available, no changes have been made to the system." | tee -a "$LOG_OUTPUT"
 	exit 42
